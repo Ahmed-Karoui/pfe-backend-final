@@ -1,0 +1,125 @@
+var express = require('express');
+var router = express.Router();
+const Task = require('../models/task');
+const Project = require ('../models/project');
+
+router.post('/add-task', async (req,res) => {
+    try{
+        let task = new Task({
+            name:req.body.name,
+            description:req.body.description,
+            status:req.body.status,
+            member:req.body.member,
+            due_date:req.body.due_date,
+            creation_date:Date.now(),
+            project:req.body.project,
+
+        })
+       let createdTask = await task.save() 
+       res.status(201).json({
+        status : 'Success',
+        data : {
+            createdTask
+        }
+    })
+    }catch(err){
+        console.log(err)
+    }
+})
+
+
+router.get('/get-tasks',  (req,res) =>{
+    Task.find({}, (err,result)=>{
+        if(err){
+            res.send(err)
+        }
+        res.send(result)
+    })
+})
+
+
+router.patch('/update-task/:id', async (req,res) => {
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id,req.body,{
+        new : true,
+        runValidators : true
+      })
+    try{
+        res.status(200).json({
+            status : 'Success',
+            data : {
+                updatedTask
+            }
+          })
+    }catch(err){
+        console.log(err)
+    }
+})
+
+
+router.delete('/delete-task/:id', async (req,res) => {
+    const id = req.params.id
+    await Task.findByIdAndRemove(id).exec()
+    res.send('Deleted')
+})
+
+
+// router.get('/get-tasks-by-project/:Project/projects',  (req,res) =>{
+//     let projectsfound  = Task.find({project:req.params.Project}).populate('projects').execPopulate;
+//     console.log(projectsfound)
+//     // res.json(projectsfound)
+//     });
+
+
+    router.get('/get-tasks-by-project/:Project', function(req, res) {
+        Task.find({project:req.params.Project}).populate().exec(function(err, av) {
+          if (err)
+            res.send(err);
+    
+          res.json(av);
+        });
+      });
+
+
+      router.get('/task/:id', (req, res, next) => {
+        Task.findOne({
+          _id: req.params.id
+        }).then(
+          (thing) => {
+            res.status(200).json(thing);
+          }
+        ).catch(
+          (error) => {
+            res.status(404).json({
+              error: error
+            });
+          }
+        );
+      });
+
+
+    //   router.put('/task-validate/:id/:status', (req, res, next) => {
+    //     Task.findByIdAndUpdate({"5db6b26730f133b65dbbe459"},{"breed": "Great Dane"}, function(err, result){
+    //         if(err){
+    //             res.send(err)
+    //         }
+    //         else{
+    //             res.send(result)
+    //         }
+    
+
+    router.route('/task-validate/:id').post(function(req,res){
+
+        Task.findByIdAndUpdate({_id:req.params.id},{"status": "Completed"}, function(err, result){
+    
+            if(err){
+                res.send(err)
+            }
+            else{
+                res.send(result)
+            }
+    
+        })
+    })
+
+
+module.exports = router;
